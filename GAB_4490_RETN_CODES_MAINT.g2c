@@ -1,0 +1,52 @@
+Program.Sub.ScreenSU.Start
+Gui.frmRetnCodes..Create
+Gui.frmRetnCodes..Caption("Retention Codes")
+Gui.frmRetnCodes..Size(12390,6330)
+Gui.frmRetnCodes..MinX(0)
+Gui.frmRetnCodes..MinY(0)
+Gui.frmRetnCodes..Position(0,0)
+Gui.frmRetnCodes..BackColor(-2147483633)
+Gui.frmRetnCodes..MousePointer(0)
+Gui.frmRetnCodes..Event(UnLoad,frmRetnCodes_UnLoad)
+Gui.frmRetnCodes.gsgcRetentionCodes.Create(GsGridControl)
+Gui.frmRetnCodes.gsgcRetentionCodes.Size(11925,4950)
+Gui.frmRetnCodes.gsgcRetentionCodes.Position(105,105)
+Gui.frmRetnCodes.cmdSave.Create(Button)
+Gui.frmRetnCodes.cmdSave.Size(1740,375)
+Gui.frmRetnCodes.cmdSave.Position(105,5115)
+Gui.frmRetnCodes.cmdSave.Caption("Save and Update")
+Gui.frmRetnCodes.cmdSave.Event(Click,cmdSave_Click)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+f.ODBC.Connection!con.OpenConnection(v.Ambient.PDSN,v.Ambient.PUser,v.Ambient.PPass)
+gui.frmRetnCodes..Show
+gui.frmRetnCodes.gsgcRetentionCodes.anchor(15)
+gui.frmRetnCodes.cmdSave.anchor(6)
+v.Local.ssql.Declare(string,"SELECT * FROM GAB_4490_RETN_CODE")
+f.Data.DataTable.CreateFromSQL("dtRC","con",v.Local.ssql,true)
+GUI.frmRetnCodes.gsgcRetentionCodes.DataSource("dtRC")
+gui.frmRetnCodes.gsgcRetentionCodes.AddGridviewFromDatatable("GVRC","dtRC")
+gui.frmRetnCodes.gsgcRetentionCodes.SetGridviewProperty("GVRC","AllowAddRows","True")
+gui.frmRetnCodes.gsgcRetentionCodes.SetGridviewProperty("GVRC","AllowDeleteRows","True")
+gui.frmRetnCodes.gsgcRetentionCodes.SetGridviewProperty("GVRC","Editable","True")
+gui.frmRetnCodes.gsgcRetentionCodes.SetGridviewProperty("GVRC","ReadOnly","False")
+
+Program.Sub.Main.End
+
+Program.Sub.frmRetnCodes_UnLoad.Start
+f.ODBC.Connection!con.Close
+f.Intrinsic.Control.End
+
+Program.Sub.frmRetnCodes_UnLoad.End
+
+Program.Sub.cmdSave_Click.Start
+f.Data.DataTable.SaveToDB("dtRC","con","GAB_4490_RETN_CODE","RetentionCode")
+Program.Sub.cmdSave_Click.End
+
+Program.Sub.Comments.Start
+${$0$}$$}$SUPERVSR$}$3/04/2017 10:59:11 a.m.$}$False
+Program.Sub.Comments.End
