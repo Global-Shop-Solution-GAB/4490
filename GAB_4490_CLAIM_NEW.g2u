@@ -1,0 +1,195 @@
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.TRY
+	v.Local.scc.Declare(string)
+	f.Intrinsic.String.Concat("GLOBAL_",v.Caller.CompanyCode,v.Local.scc)
+	F.ODBC.Connection!CON.OpenConnection(v.Local.scc,"Master","master")
+	v.Local.fShip.Declare(float)
+	v.Local.fExtn.Declare(float)
+	V.Local.sret.Declare(string)
+	V.Local.sret2.Declare(string)
+	v.Local.sdesc.Declare(string)
+'	f.Intrinsic.Debug.ShowCallerInfo
+	'DELETE VALUES FROM GAB_4490_CLAIM
+	V.Local.SDEL.Declare(String,"DELETE FROM GAB_4490_CLAIM WHERE TERMINAL_NO='{0}' AND INVOICE_NO='{1}' AND RPTID='000055'")
+	F.Intrinsic.String.Build(v.Local.SDEL,v.Caller.Terminal,V.Passed.009004,v.Local.SDEL)
+	f.ODBC.Connection!CON.Execute(v.Local.SDEL)
+	'INSERT ALL VALUES FROM PRT_LASER_INVOICE INTO GAB_4490_CLAIM
+	V.Local.SSQL.Declare(String,"INSERT INTO GAB_4490_CLAIM SELECT * FROM PRT_LASER_INVOICE WHERE TERMINAL_NO='{0}' AND INVOICE_NO='{1}' AND RPTID='000055' AND (LINE_TYPE<>'TI' AND LINE_TYPE<>'TT')")
+	f.Intrinsic.String.Build(v.Local.SSQL,v.Caller.Terminal,V.PASSED.009004,v.Local.SSQL)
+	f.ODBC.Connection!CON.Execute(v.Local.SSQL)	
+	'GET THE PRICE SCHEDULE SET, 'UPDATE USER 1 FIELD BECAUSE IT IS MISSING FOR LINE ITEMS NOT SHIPPED, SET CLAIM TITLE AS WELL
+	V.Local.SSQL.Set("UPDATE GAB_4490_CLAIM SET PRICE_4=(SELECT PRICE FROM V_ORDER_LINES WHERE ORDER_NO=GAB_4490_CLAIM.SO_NUM AND RECORD_NO=GAB_4490_CLAIM.SO_LINE), FORM_TITLE='CLAIM'")
+	F.ODBC.Connection!CON.Execute(V.Local.SSQL)
+	
+	V.Local.SSQL.Set("SELECT * FROM GAB_4490_CLAIM WHERE TERMINAL_NO='{0}' AND INVOICE_NO='{1}' AND RPTID='000055'")
+	f.Intrinsic.String.Build(v.Local.SSQL,v.Caller.Terminal,v.Passed.009004,v.Local.SSQL)
+	F.ODBC.Connection!CON.OpenRecordsetRW("rs2",v.Local.SSQL)
+	f.Intrinsic.Control.DoUntil(v.ODBC.CON!rs2.EOF,=,true)
+		'F.Intrinsic.Debug.ShowCallerInfo
+		
+		f.Intrinsic.Control.If(v.Passed.sPFLag.Trim,<>,"Y")
+			v.Local.SSQL.Set("select ROUND(IFNULL(SUM(QTY_SHIPPED),0),2) from ORDER_HIST_LINE where ORDER_NO='{0}' AND ORDER_LINE='{1}' GROUP BY ORDER_NO,ORDER_LINE")
+			F.Intrinsic.String.Build(v.Local.SSQL,v.ODBC.CON!rs2.FieldVal!SO_NUM,v.ODBC.CON!rs2.FieldVal!SO_LINE,v.Local.SSQL)
+			f.ODBC.Connection!CON.ExecuteAndReturn(v.Local.SSQL,v.Local.fShip)
+			f.ODBC.CON!rs2.Set!FILLER4(v.Local.fShip)
+		F.Intrinsic.Control.Else
+			F.ODBC.CON!rs2.Set!FILLER4(0)
+		F.Intrinsic.Control.EndIf
+		
+		f.Intrinsic.Control.If(v.Passed.sPFLag.Trim,<>,"Y")
+			v.Local.SSQL.Set("select IFNULL(SUM(EXTENSION),0) AS Total FROM ORDER_HIST_LINE where ORDER_NO='{0}' AND ORDER_LINE='{1}' AND PART<>'RETENTION' GROUP BY ORDER_NO,ORDER_LINE")
+			F.Intrinsic.String.Build(v.Local.SSQL,v.ODBC.CON!rs2.FieldVal!SO_NUM,v.ODBC.CON!rs2.FieldVal!SO_LINE,v.Local.SSQL)
+			f.ODBC.Connection!CON.ExecuteAndReturn(v.Local.SSQL,v.Local.fExtn)
+			f.ODBC.CON!rs2.Set!FILLER29(v.Local.fExtn)
+		F.Intrinsic.Control.Else
+			f.ODBC.CON!rs2.Set!FILLER29(0)
+		F.Intrinsic.Control.EndIf
+		
+		f.Intrinsic.Control.If(v.Passed.sPFLag.Trim,<>,"Y")
+			v.Local.SSQL.Set("select IFNULL(SUM(EXTENSION),0) AS Total FROM ORDER_HIST_LINE where ORDER_NO='{0}' AND PART='RETENTION' GROUP BY ORDER_NO")
+			F.Intrinsic.String.Build(v.Local.SSQL,V.Passed.009002,v.Local.SSQL)
+			f.ODBC.Connection!CON.ExecuteAndReturn(v.Local.SSQL,v.Local.fExtn)
+			f.ODBC.CON!rs2.Set!FILLER1(v.Local.fExtn)
+		F.Intrinsic.Control.Else
+			f.ODBC.CON!rs2.Set!FILLER1(v.Local.fExtn)
+		F.Intrinsic.Control.EndIf
+		
+		f.ODBC.CON!rs2.MoveNext
+	f.Intrinsic.Control.Loop
+	
+	'UPDATE USER FIELD FROM SHIPMENTS
+	'F.Intrinsic.Debug.ShowCallerInfo
+	V.Local.SSQL.Set("select LINE_ITEM,PART,DESCRIPTION,NET_AMT,LINE_TYPE,LN_USR_FLD_1,SO_NUM,SO_LINE from GAB_4490_CLAIM where terminal_no='{0}' and RPTID='000055' AND INVOICE_NO='{1}' AND LINE_TYPE='L' and LN_USR_FLD_1 IS NULL ORDER BY KEY_SEQ")
+	F.Intrinsic.String.Build(V.Local.SSQL,V.Caller.Terminal,V.Passed.009004,V.Local.SSQL)
+	F.ODBC.Connection!CON.OpenRecordsetRW("rs",v.Local.SSQL)
+	f.Intrinsic.Control.DoUntil(v.ODBC.CON!rs.EOF,=,true)
+		v.Local.SSQL.Set("SELECT LN_USER_1 FROM V_SHIPMENT_LINES WHERE ORDER_NO='{0}' AND ORDER_REC='{1}'")
+		F.Intrinsic.String.Build(V.Local.SSQL,V.ODBC.CON!rs.FieldVal!SO_NUM,V.ODBC.CON!rs.FieldVal!SO_LINE,V.Local.SSQL)
+		F.ODBC.Connection!CON.ExecuteAndReturn(V.Local.SSQL,V.Local.SRET)
+		F.ODBC.CON!rs.Set!LN_USR_FLD_1(V.Local.sret)
+		f.ODBC.CON!rs.MoveNext
+	f.Intrinsic.Control.Loop
+	
+	F.ODBC.CON!rs.Close
+	'UPDATE USER FIELD FROM ORDERS
+	'F.Intrinsic.Debug.ShowCallerInfo
+	V.Local.SSQL.Set("select LINE_ITEM,PART,DESCRIPTION,NET_AMT,LINE_TYPE,LN_USR_FLD_1,LN_USR_FLD_2,LN_USR_FLD_3,LN_USR_FLD_4,LN_USR_FLD_5,SO_NUM,SO_LINE from GAB_4490_CLAIM where terminal_no='{0}' and RPTID='000055' AND INVOICE_NO='{1}' AND LINE_TYPE='L' and LN_USR_FLD_1='' ORDER BY KEY_SEQ")
+	F.Intrinsic.String.Build(V.Local.SSQL,V.Caller.Terminal,V.Passed.009004,V.Local.SSQL)
+	F.ODBC.Connection!CON.OpenRecordsetRW("rs",v.Local.SSQL)
+	f.Intrinsic.Control.DoUntil(v.ODBC.CON!rs.EOF,=,true)
+		v.Local.SSQL.Set("SELECT USER_1 FROM V_ORDER_LINES WHERE ORDER_NO='{0}' AND RECORD_NO='{1}'")
+		F.Intrinsic.String.Build(V.Local.SSQL,V.ODBC.CON!rs.FieldVal!SO_NUM,V.ODBC.CON!rs.FieldVal!SO_LINE,V.Local.SSQL)
+		F.ODBC.Connection!CON.ExecuteAndReturn(V.Local.SSQL,V.Local.SRET)
+		F.ODBC.CON!rs.Set!LN_USR_FLD_1(V.Local.sret)
+		
+		v.Local.SSQL.Set("SELECT USER_2 FROM V_ORDER_LINES WHERE ORDER_NO='{0}' AND RECORD_NO='{1}'")
+		F.Intrinsic.String.Build(V.Local.SSQL,V.ODBC.CON!rs.FieldVal!SO_NUM,V.ODBC.CON!rs.FieldVal!SO_LINE,V.Local.SSQL)
+		F.ODBC.Connection!CON.ExecuteAndReturn(V.Local.SSQL,V.Local.SRET)
+		F.ODBC.CON!rs.Set!LN_USR_FLD_2(V.Local.sret)
+		
+		v.Local.SSQL.Set("SELECT USER_3 FROM V_ORDER_LINES WHERE ORDER_NO='{0}' AND RECORD_NO='{1}'")
+		F.Intrinsic.String.Build(V.Local.SSQL,V.ODBC.CON!rs.FieldVal!SO_NUM,V.ODBC.CON!rs.FieldVal!SO_LINE,V.Local.SSQL)
+		F.ODBC.Connection!CON.ExecuteAndReturn(V.Local.SSQL,V.Local.SRET)
+		F.ODBC.CON!rs.Set!LN_USR_FLD_3(V.Local.sret)
+		
+		v.Local.SSQL.Set("SELECT USER_4 FROM V_ORDER_LINES WHERE ORDER_NO='{0}' AND RECORD_NO='{1}'")
+		F.Intrinsic.String.Build(V.Local.SSQL,V.ODBC.CON!rs.FieldVal!SO_NUM,V.ODBC.CON!rs.FieldVal!SO_LINE,V.Local.SSQL)
+		F.ODBC.Connection!CON.ExecuteAndReturn(V.Local.SSQL,V.Local.SRET)
+		F.ODBC.CON!rs.Set!LN_USR_FLD_4(V.Local.sret)
+		
+		v.Local.SSQL.Set("SELECT USER_5 FROM V_ORDER_LINES WHERE ORDER_NO='{0}' AND RECORD_NO='{1}'")
+		F.Intrinsic.String.Build(V.Local.SSQL,V.ODBC.CON!rs.FieldVal!SO_NUM,V.ODBC.CON!rs.FieldVal!SO_LINE,V.Local.SSQL)
+		F.ODBC.Connection!CON.ExecuteAndReturn(V.Local.SSQL,V.Local.SRET)
+		F.ODBC.CON!rs.Set!LN_USR_FLD_5(V.Local.sret)
+		
+		f.ODBC.CON!rs.MoveNext
+	f.Intrinsic.Control.Loop
+	F.ODBC.CON!rs.Close
+	
+	'Add in the history
+	'F.Intrinsic.Debug.ShowCallerInfo
+	V.Local.SSQL.Set("SELECT * FROM V_ORDER_HIST_LINE WHERE ORDER_NO='{0}'")
+	F.Intrinsic.String.Build(V.Local.SSQL,V.Passed.009002,V.Local.SSQL)
+	F.ODBC.Connection!CON.OpenRecordsetRW("rs",v.Local.SSQL)
+	f.Intrinsic.Control.DoUntil(v.ODBC.CON!rs.EOF,=,true)
+		v.Local.SSQL.Set("SELECT DISTINCT SO_NUM,SO_LINE FROM GAB_4490_CLAIM WHERE SO_NUM='{0}' AND SO_LINE='{1}' AND TERMINAL_NO='{2}' and invoice_no='{3}'")
+		F.Intrinsic.String.Build(V.Local.SSQL,V.ODBC.CON!rs.FieldVal!ORDER_NO,V.ODBC.CON!rs.FieldVal!ORDER_LINE,V.Caller.Terminal,v.Passed.009004,v.Local.SSQL)
+		F.ODBC.Connection!CON.ExecuteAndReturn(V.Local.SSQL,V.Local.SRET)
+		F.Intrinsic.Control.If(V.Local.sret.Trim,=,"")
+			
+			f.Intrinsic.Control.If(v.Passed.sPFLag.Trim,<>,"Y")
+				v.Local.SSQL.Set("SELECT sum(extension) FROM V_ORDER_HIST_LINE WHERE ORDER_NO='{0}' AND ORDER_LINE='{1}'")
+				F.Intrinsic.String.Build(V.Local.SSQL,V.ODBC.CON!rs.FieldVal!ORDER_NO,V.ODBC.CON!rs.FieldVal!ORDER_LINE,V.Local.SSQL)
+				F.ODBC.Connection!CON.ExecuteAndReturn(V.Local.SSQL,V.Local.SRET)
+			F.Intrinsic.Control.Else
+				V.Local.sret.Set(0)
+			F.Intrinsic.Control.EndIf
+
+			f.Intrinsic.Control.If(v.Passed.sPFLag.Trim,<>,"Y")
+				v.Local.SSQL.Set("SELECT ROUND(IFNULL(SUM(QTY_SHIPPED),0),2) from ORDER_HIST_LINE where ORDER_NO='{0}' AND ORDER_LINE='{1}' GROUP BY ORDER_NO,ORDER_LINE")
+				F.Intrinsic.String.Build(V.Local.SSQL,V.ODBC.CON!rs.FieldVal!ORDER_NO,V.ODBC.CON!rs.FieldVal!ORDER_LINE,V.Local.SSQL)
+				F.ODBC.Connection!CON.ExecuteAndReturn(V.Local.SSQL,V.Local.SRET2)
+			F.Intrinsic.Control.Else
+				V.Local.sret2.Set(0)
+			F.Intrinsic.Control.EndIf
+			
+			v.Local.SDESC.Set(v.ODBC.CON!rs.FieldValTrim!DESCRIPTION)
+			F.Intrinsic.String.Replace(V.Local.SDESC,"'","''",V.Local.SDESC)
+			v.Local.SSQL.Set("INSERT INTO GAB_4490_CLAIM (RPTID,TERMINAL_NO, INVOICE_NO, LINE_TYPE, LN_USR_FLD_1, PART, DESCRIPTION, PRICE_4, FILLER4, QTY_SHIPPED, QTY_SHIPPED_2, QTY_SHIPPED_4, NET_AMT, FILLER29, SO_NUM, SO_LINE,LN_USR_FLD_2,LN_USR_FLD_3,LN_USR_FLD_4) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{9}','{9}','{10}','{11}','{12}','{13}','{14}','{15}','{16}')")
+			f.Intrinsic.String.Build(v.Local.SSQL,"000055",v.Caller.Terminal,v.Passed.009004,"L",v.ODBC.CON!rs.FieldVal!USER_1,v.ODBC.CON!rs.FieldVal!PART,v.Local.sdesc.Trim,v.ODBC.CON!rs.FieldVal!EXTENSION,v.Local.sret2,"0","0",v.Local.sret,v.ODBC.CON!rs.FieldVal!order_no,v.ODBC.CON!rs.FieldVal!ORDER_LINE,v.ODBC.CON!rs.FieldVal!USER_2,v.ODBC.CON!rs.FieldVal!USER_3,v.ODBC.CON!rs.FieldVal!USER_4,v.Local.SSQL)
+			F.ODBC.Connection!CON.Execute(v.Local.SSQL)
+			v.local.ssql.set("SELECT DISTINCT COPY_No, KEY_SORT, FORM_TITLE, INVOICE_DATE, ORDER_NO, CUSTOMER, PURCHASE_ORDER, DATE_ORDER, TAX_STATUS, ")
+			f.Intrinsic.String.Concat(v.Local.ssql,"TERMS, SALESPERSON, SALESPERSON_CODE, DATE_SHIP, SHIP_VIA, FOB, FLAG_INSURANCE, CUSTOMER_NAME, ADDRESS_1, ",v.Local.SSQL)
+			f.Intrinsic.String.Concat(v.Local.SSQL,"ADDRESS_2, ADDRESS_3, CITY, ZIP, COUNTRY, ATTENTION_TITLE, ATTENTION, FLAG_INTL, CUST_SHIP_NAME, ",v.Local.SSQL)
+			f.Intrinsic.String.Concat(v.Local.SSQL,"SHIP_ADDRESS_1, SHIP_ADDRESS_2, SHIP_ADDRESS_3, SHIP_CITY, SHIP_ZIP, SHIP_COUNTRY, FLAG_SHIP_INTL ",v.Local.SSQL)
+			f.Intrinsic.String.Concat(v.Local.SSQL,"LINE_ITEM  FROM GAB_4490_CLAIM WHERE RPTID='000055' AND TERMINAL_NO='",V.Caller.Terminal,"' AND INVOICE_NO='",V.Passed.009004,"' AND COPY_NO<>'' ",v.Local.SSQL)
+			f.ODBC.Connection!CON.ExecuteAndReturn(v.Local.SSQL,v.Local.sret)
+			f.Intrinsic.String.Split(v.Local.sret,"*!*",v.Local.sret)
+			v.Local.SSQL.Set("")
+			V.Local.SSQL.Set("UPDATE GAB_4490_CLAIM SET COPY_NO='{0}',KEY_SORT='{1}',FORM_TITLE='{2}',INVOICE_DATE='{3}',ORDER_NO='{4}',CUSTOMER='{5}',PURCHASE_ORDER='{6}',DATE_ORDER='{7}',TAX_STATUS='{8}',TERMS='{9}' WHERE SO_NUM='{10}' AND SO_LINE='{11}'")
+			F.Intrinsic.String.Build(v.Local.SSQL,v.Local.sret(0),v.Local.sret(1),v.Local.sret(2),v.Local.sret(3),v.Local.sret(4),v.Local.sret(5),v.Local.sret(6),v.Local.sret(7),v.Local.sret(8),v.Local.sret(9),v.ODBC.CON!rs.FieldVal!order_no,v.ODBC.CON!rs.FieldVal!order_line,v.Local.SSQL)
+			f.ODBC.Connection!CON.Execute(v.Local.SSQL)
+			V.Local.SSQL.Set("UPDATE GAB_4490_CLAIM SET SALESPERSON='{0}',SALESPERSON_CODE='{1}',DATE_SHIP='{2}',SHIP_VIA='{3}',FOB='{4}',FLAG_INSURANCE='{5}',CUSTOMER_NAME='{6}',ADDRESS_1='{7}',ADDRESS_2='{8}',ADDRESS_3='{9}' WHERE SO_NUM='{10}' AND SO_LINE='{11}'")
+			F.Intrinsic.String.Build(v.Local.SSQL,v.Local.sret(10),v.Local.sret(11),v.Local.sret(12),v.Local.sret(13),v.Local.sret(14),v.Local.sret(15),v.Local.sret(16),v.Local.sret(17),v.Local.sret(18),v.Local.sret(19),v.ODBC.CON!rs.FieldVal!order_no,v.ODBC.CON!rs.FieldVal!order_line,v.Local.SSQL)
+			f.ODBC.Connection!CON.Execute(v.Local.SSQL)
+			V.Local.SSQL.Set("UPDATE GAB_4490_CLAIM SET CITY='{0}',ZIP='{1}',COUNTRY='{2}',ATTENTION_TITLE='{3}',ATTENTION='{4}',FLAG_INTL='{5}',CUST_SHIP_NAME='{6}',SHIP_ADDRESS_1='{7}',SHIP_ADDRESS_2='{8}',SHIP_ADDRESS_3='{9}' WHERE SO_NUM='{10}' AND SO_LINE='{11}'")
+			F.Intrinsic.String.Build(v.Local.SSQL,v.Local.sret(20),v.Local.sret(21),v.Local.sret(22),v.Local.sret(23),v.Local.sret(24),v.Local.sret(25),v.Local.sret(26),v.Local.sret(27),v.Local.sret(28),v.Local.sret(29),v.ODBC.CON!rs.FieldVal!order_no,v.ODBC.CON!rs.FieldVal!order_line,v.Local.SSQL)
+			f.ODBC.Connection!CON.Execute(v.Local.SSQL)
+			V.Local.SSQL.Set("UPDATE GAB_4490_CLAIM SET SHIP_CITY='{0}',SHIP_ZIP='{1}',SHIP_COUNTRY='{2}',FLAG_SHIP_INTL='{3}',LINE_ITEM='{4}' WHERE SO_NUM='{5}' AND SO_LINE='{6}'")
+			F.Intrinsic.String.Build(v.Local.SSQL,v.Local.sret(30),v.Local.sret(31),v.Local.sret(32),v.Local.sret(33),v.Local.sret(34),v.ODBC.CON!rs.FieldVal!order_no,v.ODBC.CON!rs.FieldVal!order_line,v.Local.SSQL)
+			f.ODBC.Connection!CON.Execute(v.Local.SSQL)
+		F.Intrinsic.Control.EndIf
+		f.ODBC.CON!rs.MoveNext
+	f.Intrinsic.Control.Loop
+	F.ODBC.CON!rs.Close
+	
+	'nEED TO RUN LOGIC TO MATCH UP WHAT IS CURRENTLY IN THE SYSTEM THEN RUN FOR ANYTHING IN HISTORY...COME TO THINK OF IT, CAN WE ELIMINATE THE HISTORY?
+	v.Local.lRPTID.Declare(long)
+	V.Local.sParam.Declare(string,"Terminal*!*REPORTID*!*PRTORD*!*Invoice")
+	v.Local.sValue.Declare(string)
+	f.Intrinsic.String.Concat(v.Caller.Terminal,"*!*000055*!*BLANK*!*",v.Passed.009004,v.Local.sValue)
+	f.Intrinsic.String.Split(v.Local.sParam,"*!*",v.Local.sParam)
+	f.Intrinsic.String.Split(v.Local.sValue,"*!*",v.Local.sValue)
+	
+	F.Global.BI.GetIDFromName("GAB_4490_OE_INVOICE_CLAIM_A4.rpt",V.Local.lRptID)
+	f.Global.BI.PrintReport(v.Local.lRPTID,0,v.Local.sParam,v.Local.sValue,"",false)
+	
+	F.Global.BI.GetIDFromName("GAB_4490_OE_INVOICE_CLAIM_A4_NEW.rpt",V.Local.lRptID)
+	f.Global.BI.PrintReport(v.Local.lRPTID,0,v.Local.sParam,v.Local.sValue,"",false)
+	
+	
+F.Intrinsic.Control.CATCH
+	f.ODBC.Connection!CON.Close
+	f.Intrinsic.UI.Msgbox(v.Ambient.ErrorDescription)
+	f.Intrinsic.Control.End
+
+F.Intrinsic.Control.ENDTRY
+Program.Sub.Main.End
+
+Program.Sub.Comments.Start
+${$0$}$$}$SUPERVSR$}$16/04/2017 2:09:27 p.m.$}$False
+Program.Sub.Comments.End
