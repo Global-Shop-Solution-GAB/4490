@@ -1,0 +1,262 @@
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+
+f.Intrinsic.Control.try
+	f.ODBC.Connection!con.OpenConnection(v.Ambient.PDSN,v.Ambient.PUser,v.Ambient.PPass)
+	v.Local.sBuildData.Declare(string)
+	V.Local.sCustomer.Declare(string)
+	v.Local.sRouterFSQ.Declare(string)
+	v.Local.sUM.Declare(string)
+	v.Local.sDesc.Declare(string)
+	v.Local.sProdLineCD.Declare(string)
+	v.Local.nOrderQty.Declare(long)
+	v.Local.scustomerpart.Declare(string)
+	v.Local.fPrice.Declare(float)
+	v.Local.sTemp.Declare(string)
+	V.Local.sUploadType.Declare(string)
+	v.Local.sret.Declare(string)
+	v.Local.sOrderNo.Declare(string)
+	v.Local.ddatenow.Declare(date)
+	v.Local.sCustPO.Declare(string)
+	v.Local.sLocation.Declare(string)
+	v.Local.fCost.Declare(float)
+	v.Local.sUser1.Declare(string)
+	v.Local.sUser3.Declare(string)
+	v.Local.fExtension.Declare(Float)
+	v.Local.fExtTotal.Declare(Float)
+	v.Local.scustDesc.Declare(string)
+	v.Local.lOrderNo.Declare(Long)
+	
+	v.Local.fClmST.Declare(float)
+	v.Local.sRetnC.Declare(string)
+	v.Local.fClmC1.Declare(float)
+	v.Local.fClmC2.Declare(float)
+	v.Local.fClmC3.Declare(float)
+	v.Local.fClmR1.Declare(Float)
+	v.Local.fClmR2.Declare(float)
+	v.Local.fClmR3.Declare(float)
+	v.Local.fClmHS.Declare(Float)
+	v.Local.fRCapd.Declare(Float)
+	
+	v.Local.fRLvl1.Declare(float)
+	v.Local.fRLvl2.Declare(Float)
+	v.Local.fRLvl3.Declare(Float)
+	v.Local.fRTotl.Declare(float)
+	v.Local.fRHist.Declare(float)
+	v.Local.fRHTTL.Declare(float)
+	v.Local.fReten.Declare(float)
+	v.Local.fGTClm.Declare(float)
+	v.Local.sGLRCd.declare(string)
+	
+	v.Local.sLine.Declare(string)
+	v.Local.iLine.Declare(long)
+	V.Local.stempfull.Declare(string)
+	v.Local.iVal.Declare(long)
+	v.Local.sMsg.Declare(string)
+	'f.Intrinsic.Debug.ShowCallerInfo
+	v.Local.ssql.Declare(String,"SELECT * FROM V_PRT_LASER_INVOICE WHERE TERMINAL_NO='{0}' AND LINE_TYPE='ST' AND RPTID='000055' AND INVOICE_NO='{1}'")
+	F.Intrinsic.String.Build(V.Local.ssql,v.Caller.Terminal,v.Passed.009004,v.Local.ssql)
+	f.ODBC.Connection!con.OpenLocalRecordsetRW("rs",v.Local.ssql)
+	F.Intrinsic.Control.If(V.ODBC.con!rs.EOF,=,TRUE)
+		v.Local.sMsg.Set("GST Missing for {0}!  Will skip invoice retention calculation!")
+		f.Intrinsic.String.Build(v.Local.sMsg,v.Passed.009004,v.Local.sMsg)
+		F.Intrinsic.UI.Msgbox(v.Local.sMsg)
+	f.Intrinsic.Control.EndIf
+	
+	'f.Intrinsic.Debug.ShowCallerInfo
+	f.Intrinsic.Control.DoUntil(v.ODBC.con!rs.EOF,=,true)
+		v.Local.fClmST.Set(v.ODBC.con!rs.FieldValFloat!NET_AMT)
+		v.Local.sOrderNo.Set(v.Passed.009002)
+		'Get the retention schedule
+		f.Intrinsic.Math.ConvertToLong(v.Passed.009002,v.Local.lOrderNo)
+		v.Local.ssql.Set("SELECT RETN_CODE FROM GAB_4490_SO_CONTRACT WHERE ORDER_NO='{0}'")
+		F.Intrinsic.String.Build(v.Local.ssql,v.Local.lOrderNo,v.Local.ssql)
+		f.ODBC.Connection!con.ExecuteAndReturn(v.Local.ssql,v.Local.sRetnC)
+		v.Local.ssql.Set("SELECT * FROM GAB_4490_RETN_CODE WHERE RetentionCode='{0}'")
+		F.Intrinsic.String.Build(v.Local.ssql,v.Local.sRetnC.Trim,v.Local.ssql)
+		f.ODBC.Connection!con.ExecuteAndReturn(v.Local.ssql,v.Local.sret)
+'		v.Local.ssql.Set("SELECT GLAccount FROM GAB_4490_RETN_CODE WHERE RetentionCode='{0}'")
+'		F.Intrinsic.String.Build(v.Local.ssql,v.Local.sRetnC,v.Local.ssql)
+'		f.ODBC.Connection!con.ExecuteAndReturn(v.Local.ssql,v.Local.sGLRCd)
+		f.Intrinsic.String.Split(v.Local.sret,"*!*",v.Local.sret)
+		v.Local.fClmC1.Set(v.Local.sret(2))
+		v.Local.fClmR1.Set(v.Local.sret(3))
+		v.Local.fClmC2.Set(v.Local.sret(4))
+		v.Local.fClmR2.Set(v.Local.sret(5))
+		v.Local.fClmC3.Set(v.Local.sret(6))
+		v.Local.fClmR3.Set(v.Local.sret(7))
+		v.Local.fRCapd.Set(v.Local.sret(9))
+	
+		'Get the total claim in history
+		v.Local.ssql.Set("SELECT SUM(EXTENSION) FROM V_ORDER_HIST_LINE WHERE ORDER_NO='{0}' AND PART<>'RETENTION'")
+		F.Intrinsic.String.Build(v.Local.ssql,v.Local.sOrderNo,v.Local.ssql)
+		f.ODBC.Connection!con.ExecuteAndReturn(v.Local.ssql,v.Local.fClmHS)
+		'Grand Total Claim to Date
+		f.Intrinsic.Math.Add(v.Local.fClmHS,v.Local.fClmST,v.Local.fGTClm)
+		'f.Intrinsic.Debug.ShowCallerInfo
+		'Pass through the schedule
+		'Cs are Dollars
+		'Rs are percentages!
+		'Ladder 1
+		f.Intrinsic.Control.If(v.Local.fGTClm,>,v.Local.fClmC1)
+			f.Intrinsic.Math.Evaluate("[v.lo.fClmC1]*[v.lo.fClmR1]",v.Local.fRLvl1)
+		f.Intrinsic.Control.else
+			f.Intrinsic.Math.Evaluate("[v.lo.fGTClm]*[v.lo.fClmR1]",v.Local.fRLvl1)
+		f.Intrinsic.Control.EndIf
+		'Ladder 2
+		f.Intrinsic.Control.If(v.Local.fGTClm,>,v.Local.fClmC1)
+		f.Intrinsic.Control.AndIf(v.Local.fGTClm,<,v.Local.fClmC2)
+			f.Intrinsic.Math.Evaluate("([v.lo.fGTClm]-[v.lo.fclmC1])*[v.lo.fClmR2]",v.Local.fRLvl2)
+		f.Intrinsic.Control.ElseIf(v.Local.fGTClm,>,v.Local.fClmC2)
+			f.Intrinsic.Math.Evaluate("[v.lo.fclmC2]*[v.lo.fclmR2]",v.Local.fRLvl2)
+		f.Intrinsic.Control.endif
+		'Ladder 3
+		f.Intrinsic.Control.If(v.Local.fGTClm,>,v.Local.fClmC2)
+		f.Intrinsic.Control.AndIf(v.Local.fGTClm,<,v.Local.fClmC3)
+			f.Intrinsic.Math.Evaluate("([v.lo.fGTClm]-[v.lo.fclmC2]-[v.lo.fclmC1])*[v.lo.fClmR3]",v.Local.fRLvl3)
+		f.Intrinsic.Control.EndIf
+		f.Intrinsic.Math.Evaluate("[v.lo.fRLvl1]+[v.lo.fRLvl2]+[v.lo.fRLvl3]",v.Local.fRTotl)
+
+		'Find the total retention amount in history
+		v.Local.ssql.Set("SELECT SUM(EXTENSION) FROM V_ORDER_HIST_LINE WHERE ORDER_NO='{0}' AND PART='RETENTION'")
+		F.Intrinsic.String.Build(v.Local.ssql,v.Passed.009002,v.Local.ssql)
+		f.ODBC.Connection!con.ExecuteAndReturn(v.Local.ssql,v.Local.frhist)
+		
+		'Subtract Total Retention now from total Retention in history to get retention this claim
+		f.Intrinsic.Math.add(v.Local.fRTotl,v.Local.frhist,v.Local.fReten)
+
+		v.Local.sCustomer.Set(V.ODBC.CON!rs.FieldVal!CUSTOMER)
+		v.Local.sRouterFSQ.Set("RETENTION")
+		v.Local.sUM.Set("EA")
+		v.Local.sDesc.Set("RETENTION CLAIM")
+		v.Local.sProdLineCD.Set("RT")
+		V.local.nOrderQty.Set(1)
+		v.Local.scustomerpart.Set("")
+		V.Local.fPrice.Set(v.Local.fReten)
+		V.Local.sOrderNo.Set(v.Passed.009002)
+		
+		v.Local.ssql.Set("select left(max(record_no),3) as line from v_order_lines where order_no = '{0}'")
+		f.Intrinsic.String.Build(v.Local.ssql,v.Local.sOrderNo,v.Local.ssql)
+		f.ODBC.Connection!con.ExecuteAndReturn(v.Local.ssql,v.Local.iLine)
+		'f.Intrinsic.Debug.ShowCallerInfo
+		'if iLine = 0, then you need to add a new sales order because it does not have anymore lines
+		f.Intrinsic.Control.If(v.Local.iLine,=,0)
+			'New Sales Order
+		f.Intrinsic.Control.Else
+			'Add Sales Order
+			f.Intrinsic.Math.Add(v.Local.iLine,1,v.Local.iLine)
+			F.Intrinsic.String.ConvertToString(V.Local.iLine,V.Local.sLine)
+			F.Intrinsic.String.LPad(V.Local.sLine,"0",3,V.Local.sLine)
+	
+			'f.Intrinsic.Debug.ShowCallerInfo
+			'"O" for Order,Customer, Order #,all because of one friggin space....rpad 7 on customer
+			f.Intrinsic.String.RPad(v.Local.sCustomer," ",7,v.Local.sCustomer)
+			F.Intrinsic.String.Concat("O",V.Local.sCustomer,V.Local.sOrderNo,V.Local.sBuildData)
+			'part
+			F.Intrinsic.String.RPad("RETENTION"," ",38,V.Local.sRet)
+			F.Intrinsic.String.Concat(V.Local.sBuildData,V.Local.sRet,V.Local.sBuildData)
+			F.Intrinsic.String.RPad(V.Local.sBuildData," ",55,V.Local.sBuildData)
+			'product line
+			F.Intrinsic.String.Concat(V.Local.sBuildData,"RT","   ",V.Local.sBuildData)
+			'description
+			F.Intrinsic.String.RPad("RETENTION CLAIM"," ",30,V.Local.sret)
+			F.Intrinsic.String.Concat(V.Local.sBuildData,v.Local.sret,V.Local.sBuildData)
+			'line number 001-999
+			F.Intrinsic.String.Concat(V.Local.sBuildData,V.Local.sLine,"S",V.Local.sBuildData)
+			'quantity
+			F.Intrinsic.String.LPad(1,"0",9,V.Local.sTemp)
+			F.Intrinsic.String.RPad(V.Local.sTemp,"0",13,V.Local.sTemp)
+			F.Intrinsic.String.Concat(V.Local.sBuildData,V.Local.sTemp,V.Local.sBuildData)
+			'Weight
+			F.Intrinsic.String.Concat(V.Local.sBuildData,"0000000000",V.Local.sBuildData)
+			'price
+			F.Intrinsic.Control.If(v.Local.fPrice,<>,0)
+				'Add a negative multiplier
+				'f.Intrinsic.Math.Mult(v.Local.fPrice,-1,v.Local.fPrice)
+				'Do the rest of the formatting
+				F.Intrinsic.Math.Mult(v.Local.fPrice,100,V.Local.iVal)
+				F.intrinsic.String.LPad(V.Local.IVAL.String,"0",12,V.Local.sTemp)
+				F.Intrinsic.String.RPad(V.Local.sTemp,"0",16,V.Local.sTemp)
+				F.Intrinsic.String.Concat(V.local.sBuildData,V.local.stemp,V.local.sBuildData)
+				F.Intrinsic.control.if(V.local.stemp,=,"0000000000000000")
+					V.Local.sTemp.Set("")
+					F.Intrinsic.String.LPad(V.Local.sTemp," ",152,V.Local.sTemp)
+					F.Intrinsic.String.Concat(V.Local.sBuildData,V.Local.sTemp,V.Local.sBuildData)
+					F.Intrinsic.String.Concat(V.local.sBuildData,"1",V.Local.sBuildData)
+					V.Local.sTemp.Set("")
+					F.Intrinsic.String.LPad(V.Local.sTemp," ",67,V.Local.sTemp)
+					F.Intrinsic.String.Concat(V.Local.sBuildData,V.Local.sTemp,V.Local.sBuildData)
+					F.Intrinsic.String.Concat(V.Local.sBuildData,V.Ambient.NewLine,V.Local.sBuildData)
+				F.intrinsic.control.else
+					V.Local.sTemp.Set("")
+					F.Intrinsic.String.RPad("RETENTION"," ",30,V.Local.sTemp)
+					f.Intrinsic.String.Concat(v.Local.sBuildData,v.Local.stemp,v.Local.sBuildData)
+					F.Intrinsic.String.RPad("1"," ",30,V.Local.sTemp)
+					f.Intrinsic.String.Concat(v.Local.sBuildData,v.Local.stemp,v.Local.sBuildData)
+					F.Intrinsic.String.RPad("1"," ",30,V.Local.sTemp)
+					f.Intrinsic.String.Concat(v.Local.sBuildData,v.Local.stemp,v.Local.sBuildData)
+					F.Intrinsic.String.RPad("1"," ",30,V.Local.sTemp)
+					f.Intrinsic.String.Concat(v.Local.sBuildData,v.Local.stemp,v.Local.sBuildData)
+					F.Intrinsic.String.RPad("1"," ",30,V.Local.sTemp)
+					f.Intrinsic.String.Concat(v.Local.sBuildData,v.Local.stemp,v.Local.sBuildData)
+					F.Intrinsic.String.rpad(" "," ",130,V.Local.sTemp)
+					F.Intrinsic.String.Concat(V.Local.sBuildData,V.Local.sTemp,V.Local.sBuildData)
+					F.Intrinsic.String.Concat(V.Local.sBuildData,V.Ambient.NewLine,V.Local.sBuildData)
+				F.Intrinsic.Control.Endif
+			F.Intrinsic.Control.Else
+				V.Local.sTemp.Set("")
+				F.Intrinsic.String.LPad(V.Local.sTemp," ",16,V.Local.sTemp)
+				F.Intrinsic.String.Concat(V.Local.sBuildData,V.Local.sTemp,V.Local.sBuildData)
+				F.Intrinsic.String.Concat(V.local.sBuildData,"1",V.Local.sBuildData)
+				V.Local.sTemp.Set("")
+				F.Intrinsic.String.LPad(V.Local.sTemp," ",67,V.Local.sTemp)
+				F.Intrinsic.String.Concat(V.Local.sBuildData,V.Local.sTemp,V.Local.sBuildData)
+				F.Intrinsic.String.Concat(V.Local.sBuildData,V.Ambient.NewLine,V.Local.sBuildData)
+			F.Intrinsic.Control.EndIf
+
+			v.Local.sFileName.Declare(string)
+			v.Local.sPath.Declare(string)
+			v.Local.bExists.Declare(boolean)
+			v.Local.sparam.Declare(string)
+			F.Intrinsic.String.Concat("GABSALESUPLOAD",V.Caller.Terminal,V.Caller.CompanyCode,V.local.sFileName)
+			F.Intrinsic.String.Concat(V.Caller.FilesDir,"\",V.local.sFileName,V.Local.sPath)
+			F.Intrinsic.File.Exists(V.Local.sPath,V.Local.bExists)
+			F.Intrinsic.Control.If(V.Local.bExists,=,True)
+				F.Intrinsic.File.DeleteFile(V.Local.sPath)
+			F.Intrinsic.Control.EndIf
+			F.Intrinsic.File.String2File(V.Local.sPath,V.Local.sBuildData)
+			'Create a backup
+			v.Local.sbackup.Declare(string)
+			f.Intrinsic.String.Concat(v.Caller.FilesDir,"\",v.Local.sFileName," BACKUP",v.Local.sbackup)
+			F.Intrinsic.File.String2File(V.Local.sbackup,V.Local.sBuildData)
+			
+			F.Intrinsic.String.Concat(V.Caller.FilesDir,"\",V.local.sFileName,V.Local.sPath)
+			F.Intrinsic.String.Rpad("SUPERVSR"," ",8,V.Local.sTemp)
+			F.Intrinsic.String.Concat(V.Local.sParam,V.Ambient.QuadQuote,Variable.Caller.CompanyCode,Variable.Local.sTemp,Variable.Local.sPath,V.Ambient.QuadQuote,Variable.Local.sParam)
+	
+	
+			F.Intrinsic.Task.Launchgsssync("ORDADCMD","-c",Variable.Local.sParam)
+			V.Local.ssql.Set("UPDATE ORDER_LINES SET PRICE=PRICE*-1, EXTENSION=EXTENSION*-1, DISCOUNT_PRICE=DISCOUNT_PRICE*-1, PRICE_ORDER=PRICE_ORDER*-1, PRICE_DISC_ORD=PRICE_DISC_ORD*-1, EXTENSION_ORDER=EXTENSION_ORDER*-1 WHERE ORDER_NO='{0}' AND PART='RETENTION'")
+			F.Intrinsic.String.Build(v.Local.ssql,v.Local.sOrderNo,v.Local.sLine,v.Local.ssql)
+			
+			f.ODBC.Connection!con.Execute(v.Local.ssql)
+		f.Intrinsic.Control.EndIf
+		
+		f.ODBC.con!rs.MoveNext
+	f.Intrinsic.Control.Loop
+f.Intrinsic.Control.catch
+	f.ODBC.Connection!con.Close
+	f.Intrinsic.UI.Msgbox(v.Ambient.ErrorDescription)
+	f.Intrinsic.Control.End
+
+f.Intrinsic.Control.endtry
+
+
+Program.Sub.Main.End
+
+Program.Sub.Comments.Start
+${$0$}$$}$SUPERVSR$}$21/03/2017 11:20:46 a.m.$}$False
+Program.Sub.Comments.End
