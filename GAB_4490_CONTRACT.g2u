@@ -1,0 +1,181 @@
+Program.Sub.ScreenSU.Start
+Gui.frmContract..Create
+Gui.frmContract..Caption("Contract Management")
+Gui.frmContract..Size(8550,3015)
+Gui.frmContract..MinX(0)
+Gui.frmContract..MinY(0)
+Gui.frmContract..Position(0,0)
+Gui.frmContract..BackColor(-2147483633)
+Gui.frmContract..MousePointer(0)
+Gui.frmContract..Event(UnLoad,frmContract_UnLoad)
+Gui.frmContract.cmdBrowseSched.Create(Button)
+Gui.frmContract.cmdBrowseSched.Size(450,375)
+Gui.frmContract.cmdBrowseSched.Position(1455,345)
+Gui.frmContract.cmdBrowseSched.Caption("^")
+Gui.frmContract.cmdBrowseSched.Event(Click,cmdBrowseSched_Click)
+Gui.frmContract.txtRetnCode.Create(TextBox,"",True,1215,300,0,150,360,False,0,"Arial",8,-2147483643,1)
+Gui.frmContract.ddlDefects.Create(DropDownList)
+Gui.frmContract.ddlDefects.Size(3945,330)
+Gui.frmContract.ddlDefects.Position(2520,1035)
+Gui.frmContract.chkPracCompl.Create(CheckBox)
+Gui.frmContract.chkPracCompl.Size(1860,360)
+Gui.frmContract.chkPracCompl.Position(2520,90)
+Gui.frmContract.chkPracCompl.Caption("Practical Completion")
+Gui.frmContract.lbl1.Create(Label,"Defects Liability",True,3990,255,0,2535,795,True,0,"Arial",8,-2147483633,0)
+Gui.frmContract.cmdSave.Create(Button)
+Gui.frmContract.cmdSave.Size(855,375)
+Gui.frmContract.cmdSave.Position(105,1890)
+Gui.frmContract.cmdSave.Caption("Save")
+Gui.frmContract.cmdSave.Event(Click,cmdSave_Click)
+Gui.frmContract.dtpPracCompl.Create(DatePicker)
+Gui.frmContract.dtpPracCompl.Size(1935,285)
+Gui.frmContract.dtpPracCompl.Position(2520,450)
+Gui.frmContract.lbl2.Create(Label,"Schedule",True,1185,255,0,180,120,True,0,"Arial",8,-2147483633,0)
+Gui.frmContract.txtRelease1.Create(TextBox,"",True,945,300,0,6765,360,True,0,"Arial",8,-2147483643,1)
+Gui.frmContract.txtRelease2.Create(TextBox,"",True,960,300,0,6765,1020,True,0,"Arial",8,-2147483643,1)
+Gui.frmContract.lbl3.Create(Label,"Percent Release 1",True,1935,255,0,6735,135,True,0,"Arial",8,-2147483633,0)
+Gui.frmContract.lbl4.Create(Label,"Percent Release 2",True,1935,255,0,6735,810,True,0,"Arial",8,-2147483633,0)
+Gui.frmContract.lblOrderNo.Create(Label,"",False,1935,255,0,6285,2100,True,0,"Arial",8,-2147483633,0)
+Gui.frmContract.cmdRetnCodeMaint.Create(Button)
+Gui.frmContract.cmdRetnCodeMaint.Size(2445,375)
+Gui.frmContract.cmdRetnCodeMaint.Position(1065,1890)
+Gui.frmContract.cmdRetnCodeMaint.Caption("Retention Code Maint.")
+Gui.frmContract.cmdRetnCodeMaint.Event(Click,cmdRetnCodeMaint_Click)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.If(V.Caller.Hook,=,"11560")
+	V.Passed.000201.Set("Retention")
+	V.Passed.000202.Set("Contract")
+	V.Passed.000203.Set("Claim Hist")
+f.Intrinsic.Control.Else
+	f.ODBC.Connection!con.OpenConnection(v.Ambient.PDSN,v.Ambient.PUser,v.Ambient.PPass)
+	gui.frmContract..Show
+	Gui.frmContract.ddlDefects.AddItem("1 month after practical completion","1")
+	Gui.frmContract.ddlDefects.AddItem("2 months after practical completion","2")
+	Gui.frmContract.ddlDefects.AddItem("3 months after practical completion","3")
+	Gui.frmContract.ddlDefects.AddItem("4 months after practical completion","4")
+	Gui.frmContract.ddlDefects.AddItem("5 months after practical completion","5")
+	Gui.frmContract.ddlDefects.AddItem("6 months after practical completion","6")
+	Gui.frmContract.ddlDefects.AddItem("7 months after practical completion","7")
+	Gui.frmContract.ddlDefects.AddItem("8 months after practical completion","8")
+	Gui.frmContract.ddlDefects.AddItem("9 months after practical completion","9")
+	Gui.frmContract.ddlDefects.AddItem("10 months after practical completion","10")
+	Gui.frmContract.ddlDefects.AddItem("11 months after practical completion","11")
+	Gui.frmContract.ddlDefects.AddItem("12 months after practical completion","12")
+	Gui.frmContract.ddlDefects.AddItem("13 months after practical completion","13")
+	Gui.frmContract.ddlDefects.AddItem("14 months after practical completion","14")
+	Gui.frmContract.ddlDefects.AddItem("15 months after practical completion","15")
+	Gui.frmContract.ddlDefects.AddItem("16 months after practical completion","16")
+	Gui.frmContract.ddlDefects.AddItem("17 months after practical completion","17")
+	Gui.frmContract.ddlDefects.AddItem("18 months after practical completion","18")
+	Gui.frmContract.ddlDefects.AddItem("19 months after practical completion","19")
+	Gui.frmContract.ddlDefects.AddItem("20 months after practical completion","20")
+	Gui.frmContract.ddlDefects.AddItem("21 months after practical completion","21")
+	Gui.frmContract.ddlDefects.AddItem("22 months after practical completion","22")
+	Gui.frmContract.ddlDefects.AddItem("23 months after practical completion","23")
+	Gui.frmContract.ddlDefects.AddItem("24 months after practical completion","24")
+	gui.frmContract.lblOrderNo.Caption(v.Passed.000003)
+	v.Local.ssql.Declare(string,"SELECT * FROM GAB_4490_SO_CONTRACT WHERE ORDER_NO='{0}'")
+	f.Intrinsic.String.Build(v.Local.ssql,v.Passed.000003,v.Local.ssql)
+	f.ODBC.Connection!con.OpenRecordsetRW("rsInit",v.Local.ssql)
+	f.Intrinsic.Control.If(v.ODBC.con!rsInit.EOF,=,false)
+		gui.frmContract.txtRetnCode.Text(v.ODBC.con!rsInit.FieldVal!RETN_CODE)
+		gui.frmContract.dtpPracCompl.Value(v.ODBC.con!rsInit.FieldVal!PRACTICAL_COMPL_DT)
+		gui.frmContract.chkPracCompl.Value(v.ODBC.con!rsInit.FieldVal!PRACTICAL_COMPL)
+		gui.frmContract.txtRelease1.Text(v.ODBC.con!rsInit.FieldVal!RELEASE_1)
+		gui.frmContract.txtRelease2.Text(v.ODBC.con!rsInit.FieldVal!RELEASE_2)
+		gui.frmContract.ddlDefects.text(v.ODBC.con!rsInit.FieldValTrim!DEFECT_LIABILITY)
+	f.Intrinsic.Control.EndIf
+	F.ODBC.con!rsInit.Close
+f.Intrinsic.Control.EndIf
+Program.Sub.Main.End
+
+Program.Sub.cmdBrowseSched_Click.Start
+V.Local.sRet.Declare(String)
+V.Local.sTitles.Declare(String)
+V.Local.iWidths.Declare(String)
+V.Local.stemp.Declare(String)
+
+f.Intrinsic.UI.SetBrowserHotTypeAhead(true)
+
+F.intrinsic.string.split("Retention Code*!*Description","*!*",Variable.local.sTitles)
+F.intrinsic.string.split("2000*!*3000","*!*",Variable.local.iWidths)
+
+V.Local.ssql.Declare(String)
+V.Local.ssql.set("SELECT RetentionCode, Description FROM GAB_4490_RETN_CODE")
+
+F.intrinsic.ui.browser("Select a Code",con,v.Local.ssql,Variable.local.sTitles,Variable.local.iWidths,Variable.local.sRet)
+
+F.intrinsic.control.if(Variable.local.sRet,"=","***CANCEL***")
+  	'Function.intrinsic.ui.msgbox("No part was selected!")
+F.intrinsic.control.else
+  	F.intrinsic.string.split(Variable.local.sRet,"*!*",Variable.local.sRet)
+	gui.frmContract.txtRetnCode.Text(v.Local.sRet(0))
+F.Intrinsic.Control.endif
+
+Program.Sub.cmdBrowseSched_Click.End
+
+Program.Sub.Form_UnLoad.Start
+	f.ODBC.Connection!con.Close
+	f.Intrinsic.Control.End
+
+Program.Sub.Form_UnLoad.End
+
+Program.Sub.cmdSave_Click.Start
+f.Intrinsic.Control.If(v.Screen.frmContract!txtRetnCode.Text,=,"")
+	f.Intrinsic.UI.Msgbox("Retention code not selected.")
+	f.Intrinsic.Control.ExitSub
+f.Intrinsic.Control.EndIf
+
+f.Intrinsic.Control.If(v.Screen.frmContract!txtRelease1.Text,=,"","or",v.Screen.frmContract!txtRelease2.Text,=,"")
+	f.Intrinsic.UI.Msgbox("Retention Release Missing, please key in.")
+	f.Intrinsic.Control.ExitSub
+f.Intrinsic.Control.EndIf
+
+v.Local.ssql.Declare(string,"SELECT * FROM GAB_4490_SO_CONTRACT WHERE ORDER_NO='{0}'")
+f.Intrinsic.String.Build(v.Local.ssql,v.Screen.frmContract!lblOrderNo.Caption,v.Local.ssql)
+f.ODBC.Connection!con.OpenRecordsetRW("rs",v.Local.ssql)
+f.Intrinsic.Control.If(v.ODBC.con!rs.EOF,=,true)
+	f.ODBC.con!rs.AddNew
+	f.ODBC.con!rs.Set!RETN_CODE(v.Screen.frmContract!txtRetnCode.Text)
+	f.ODBC.con!rs.Set!ORDER_NO(V.Screen.frmContract!lblOrderNo.Caption)
+	f.ODBC.con!rs.Set!PRACTICAL_COMPL(V.Screen.frmContract!chkPracCompl.Value)
+	f.ODBC.con!rs.Set!PRACTICAL_COMPL_DT(V.Screen.frmContract!dtpPracCompl.Value)
+	f.ODBC.con!rs.set!DEFECT_LIABILITY(V.Screen.frmContract!ddlDefects.Text)
+	f.ODBC.con!rs.Set!RELEASE_1(v.Screen.frmContract!txtRelease1.Text)
+	f.ODBC.con!rs.Set!RELEASE_2(v.Screen.frmContract!txtRelease2.Text)
+	f.ODBC.con!rs.MoveNext
+f.Intrinsic.Control.Else
+	f.ODBC.con!rs.Set!RETN_CODE(v.Screen.frmContract!txtRetnCode.Text)
+	f.ODBC.con!rs.Set!ORDER_NO(V.Screen.frmContract!lblOrderNo.Caption)
+	f.ODBC.con!rs.Set!PRACTICAL_COMPL(V.Screen.frmContract!chkPracCompl.Value)
+	f.ODBC.con!rs.Set!PRACTICAL_COMPL_DT(V.Screen.frmContract!dtpPracCompl.Value)
+	f.ODBC.con!rs.set!DEFECT_LIABILITY(V.Screen.frmContract!ddlDefects.text)
+	f.ODBC.con!rs.Set!RELEASE_1(v.Screen.frmContract!txtRelease1.Text)
+	f.ODBC.con!rs.Set!RELEASE_2(v.Screen.frmContract!txtRelease2.Text)
+	f.ODBC.con!rs.Update
+f.Intrinsic.Control.EndIf
+f.ODBC.con!rs.Close
+
+Program.Sub.cmdSave_Click.End
+
+Program.Sub.frmContract_UnLoad.Start
+	f.ODBC.Connection!con.Close
+	f.Intrinsic.Control.End
+
+Program.Sub.frmContract_UnLoad.End
+
+Program.Sub.cmdRetnCodeMaint_Click.Start
+v.Local.sfilepath.Declare(string)
+v.Local.lID.Declare(long)
+f.Intrinsic.String.Concat(v.Caller.GasDir,"\GAB_4490_RETN_CODES_MAINT.g2c",v.Local.sfilepath)
+f.Global.General.CallAsyncGAS(v.Local.sfilepath,v.Local.lID)
+Program.Sub.cmdRetnCodeMaint_Click.End
+
+Program.Sub.Comments.Start
+${$0$}$$}$SUPERVSR$}$21/03/2017 1:34:11 p.m.$}$False
+Program.Sub.Comments.End
