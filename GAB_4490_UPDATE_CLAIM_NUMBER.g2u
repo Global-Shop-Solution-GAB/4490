@@ -1,0 +1,61 @@
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+
+'F.Intrinsic.Debug.ShowCallerInfo
+'Hook #15226
+V.Local.SSQL.Declare(STRING)
+V.Local.SORDERNO.Declare(STRING)
+v.Local.sInvoice.Declare(string)
+V.Local.SCLAIMNO.Declare(STRING)
+V.Local.LCLAIMNO.Declare(LONG)
+V.Local.smessage.Declare(string)
+V.Local.SSQL.SET("select DISTINCT ORDER_NO from V_ORDER_HIST_HEAD where batch='{0}'")
+F.Intrinsic.String.Build(V.Local.SSQL,V.Passed.BATCH,V.Local.SSQL)
+F.ODBC.Connection!CON.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+F.ODBC.Connection!CON.ExecuteAndReturn(V.Local.SSQL,V.Local.SORDERNO)
+
+V.Local.SSQL.SET("select DISTINCT invoice from V_ORDER_HIST_HEAD where batch='{0}'")
+F.Intrinsic.String.Build(V.Local.SSQL,V.Passed.BATCH,V.Local.SSQL)
+F.ODBC.Connection!CON.ExecuteAndReturn(V.Local.SSQL,V.Local.sInvoice)
+
+f.Intrinsic.String.Split(v.Local.SORDERNO,"#$#",v.Local.SORDERNO)
+
+V.Local.SSQL.Set("SELECT USER_1 FROM V_ORDER_HEADER WHERE ORDER_NO='{0}'")
+F.Intrinsic.String.Build(V.Local.SSQL,V.Local.SORDERNO(0),V.Local.SSQL)
+
+F.ODBC.Connection!CON.ExecuteAndReturn(V.Local.SSQL,V.Local.SCLAIMNO)
+
+F.Intrinsic.Control.If(V.Local.SCLAIMNO.Trim,=,"")
+	v.Local.smessage.Set("CLAIM NUMBER NOT FOUND for order no {0}, MUST MANUALLY UPDATE")
+	f.Intrinsic.String.Build(v.Local.smessage,v.Local.SORDERNO,v.Local.smessage)
+	f.Intrinsic.UI.Msgbox(v.Local.smessage)
+F.Intrinsic.Control.Else
+	F.Intrinsic.Control.Try
+		F.Intrinsic.Math.Add(V.Local.SCLAIMNO,1,V.Local.LCLAIMNO)
+		V.Local.SSQL.Set("UPDATE ORDER_HEADER SET USER_1='{0}' WHERE ORDER_NO='{1}' AND RECORD_NO='  A '")
+		F.Intrinsic.String.Build(V.Local.SSQL,V.Local.LCLAIMNO,V.Local.SORDERNO,V.Local.SSQL)
+		F.ODBC.Connection!CON.Execute(V.Local.SSQL)
+		
+		v.Local.SSQL.Set("INSERT INTO GAB_4490_CLAIM_HIST SELECT * FROM GAB_4490_CLAIM WHERE TERMINAL_NO='{0}' AND INVOICE_NO='{1}'")
+		F.Intrinsic.STRING.Build(v.Local.SSQL,v.Caller.Terminal,v.Local.sInvoice,v.Local.SSQL)
+		f.ODBC.Connection!CON.execute(v.Local.ssql)
+		
+		v.Local.smessage.Set("ORDER NO# {0} Successfully updated claim to number: {1}.  Successfully added into history")
+		f.Intrinsic.String.Build(v.Local.smessage,v.Local.SORDERNO,v.Local.LCLAIMNO,v.Local.smessage)
+		f.Intrinsic.UI.Msgbox(v.Local.smessage)
+	F.Intrinsic.Control.Catch
+		f.Intrinsic.UI.Msgbox(v.Ambient.ErrorDescription)
+		F.ODBC.Connection!CON.Close
+	F.Intrinsic.Control.EndTry
+F.Intrinsic.Control.EndIf
+		
+F.ODBC.Connection!CON.Close
+
+Program.Sub.Main.End
+
+Program.Sub.Comments.Start
+${$0$}$$}$SUPERVSR$}$12-Jul-17 8:45:10 AM$}$True
+Program.Sub.Comments.End
