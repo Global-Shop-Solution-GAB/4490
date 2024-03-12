@@ -1,0 +1,308 @@
+Program.Sub.ScreenSU.Start
+Gui.frmContractOV..Create
+Gui.frmContractOV..Caption("Contract Overview")
+Gui.frmContractOV..Size(16530,13080)
+Gui.frmContractOV..MinX(0)
+Gui.frmContractOV..MinY(0)
+Gui.frmContractOV..Position(0,0)
+Gui.frmContractOV..BackColor(-2147483633)
+Gui.frmContractOV..MousePointer(0)
+Gui.frmContractOV..Event(UnLoad,frmContractOV_UnLoad)
+Gui.frmContractOV.gsgcContract.Create(GsGridControl)
+Gui.frmContractOV.gsgcContract.Size(16020,9195)
+Gui.frmContractOV.gsgcContract.Position(150,915)
+Gui.frmContractOV.gsgcContract.Event(CellValueChanged,gsgcContract_CellValueChanged)
+Gui.frmContractOV.txtProject.Create(TextBox,"",True,3090,300,0,180,285,True,0,"Arial",8,-2147483643,1)
+Gui.frmContractOV.cmdBrowse.Create(Button)
+Gui.frmContractOV.cmdBrowse.Size(600,375)
+Gui.frmContractOV.cmdBrowse.Position(3390,240)
+Gui.frmContractOV.cmdBrowse.Caption("^")
+Gui.frmContractOV.cmdBrowse.Event(Click,cmdBrowse_Click)
+Gui.frmContractOV.lbl1.Create(Label,"Main Contract:",True,1665,255,0,345,10485,True,0,"Arial",8,-2147483633,0)
+Gui.frmContractOV.lbl2.Create(Label,"Additions:",True,1620,255,0,345,10860,True,0,"Arial",8,-2147483633,0)
+Gui.frmContractOV.lbl3.Create(Label,"Deductions:",True,1560,255,0,345,11280,True,0,"Arial",8,-2147483633,0)
+Gui.frmContractOV.lbl4.Create(Label,"Contract Total:",True,1620,255,0,345,11685,True,0,"Arial",8,-2147483633,0)
+Gui.frmContractOV.txtMainContract.Create(TextBox,"",True,1830,300,0,2100,10410,False,1,"Arial",8,-2147483643,1)
+Gui.frmContractOV.txtAdditions.Create(TextBox,"",True,1830,300,0,2100,10800,False,1,"Arial",8,-2147483643,1)
+Gui.frmContractOV.txtDeductions.Create(TextBox,"",True,1830,300,0,2100,11175,False,1,"Arial",8,-2147483643,1)
+Gui.frmContractOV.txtTotal.Create(TextBox,"",True,1830,300,0,2100,11595,False,1,"Arial",8,-2147483643,1)
+Gui.frmContractOV.txtInvNumber.Create(TextBox,"",False,1770,300,0,6240,10470,False,0,"Arial",8,-2147483643,1)
+Gui.frmContractOV.cmdInvBrowse.Create(Button)
+Gui.frmContractOV.cmdInvBrowse.Size(690,375)
+Gui.frmContractOV.cmdInvBrowse.Position(8085,10440)
+Gui.frmContractOV.cmdInvBrowse.Caption("^")
+Gui.frmContractOV.cmdInvBrowse.Event(Click,cmdInvBrowse_Click)
+Gui.frmContractOV.cmdInvBrowse.Visible(False)
+Gui.frmContractOV.cmdPreviewer.Create(Button)
+Gui.frmContractOV.cmdPreviewer.Size(1515,375)
+Gui.frmContractOV.cmdPreviewer.Position(4335,10410)
+Gui.frmContractOV.cmdPreviewer.Caption("Previewer")
+Gui.frmContractOV.cmdPreviewer.Event(Click,cmdPreviewer_Click)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.frmContractOV_UnLoad.Start
+f.Intrinsic.Control.End
+Program.Sub.frmContractOV_UnLoad.End
+
+Program.Sub.cmdBrowse_Click.Start
+V.Local.sRet.Declare(String)
+V.Local.sTitles.Declare(String)
+V.Local.iWidths.Declare(String)
+V.Local.stemp.Declare(String)
+
+F.intrinsic.string.split("Order No*!*Customer","*!*",v.local.sTitles)
+F.intrinsic.string.split("2000*!*3000","*!*",v.local.iWidths)
+
+V.Local.ssql.Declare(String,"SELECT ORDER_NO, NAME_CUSTOMER from V_ORDER_BILL_TO")
+
+F.intrinsic.ui.browser("Select a Order",conx,v.Local.ssql,v.local.sTitles,v.local.iWidths,v.local.sRet)
+
+F.intrinsic.control.if(v.local.sRet,"=","***CANCEL***")
+  'Function.intrinsic.ui.msgbox("No part was selected!")
+F.intrinsic.control.else
+  	F.intrinsic.string.split(v.local.sRet,"*!*",v.local.sRet)
+	gui.frmContractOV.txtInvNumber.Text("")
+  	gui.frmContractOV.txtProject.Text(v.Local.sRet(0))
+	f.Intrinsic.Control.CallSub(buildTable)
+  	'f.Intrinsic.Debug.ShowCallerInfo
+F.Intrinsic.Control.endif
+
+Program.Sub.cmdBrowse_Click.End
+
+Program.sub.buildTable.Start
+v.Local.ssql.Declare(string)
+
+f.Intrinsic.Control.If(v.DataTable.dtH.Exists,=,true)
+	f.Data.DataTable.Close("dtH")
+f.Intrinsic.Control.EndIf
+
+f.Intrinsic.Control.If(v.DataTable.dtO.Exists,=,true)
+	f.Data.DataTable.close("dtO")
+f.Intrinsic.Control.EndIf
+
+f.Intrinsic.Control.If(v.DataTable.dtFinal.Exists,=,true)
+	f.Data.DataTable.close("dtFinal")
+f.Intrinsic.Control.EndIf
+
+'User 2 is Orig Qty
+'User 3 is Orig Price
+'User 4 is Orig Extension
+V.Local.ssql.Set("SELECT DISTINCT ORDER_NO, RECORD_NO, RTRIM(PART) as 'Part', RTRIM(DESCRIPTION) as 'Description', RTRIM(USER_1) as 'Type', RTRIM(USER_2) as 'Orig_Qty', RTRIM(USER_3) as 'Orig_Price', RTRIM(USER_4) as 'Orig_Extension', RTRIM(USER_5) as 'Site_Instructions' FROM V_ORDER_LINES WHERE ORDER_NO='{0}' AND PART<>'RETENTION'")
+F.Intrinsic.String.Build(v.Local.ssql,v.Screen.frmContractOV!txtProject.text,v.Local.ssql)
+f.Data.DataTable.CreateFromSQL("dtO","conx",v.Local.ssql,true)
+
+v.Local.ssql.Set("SELECT DISTINCT ORDER_NO, ORDER_LINE AS 'RECORD_NO', RTRIM(PART) as 'Part', RTRIM(DESCRIPTION) as 'Description', RTRIM(USER_1) as 'Type', RTRIM(USER_2) as 'Orig_Qty', RTRIM(USER_3) as 'Orig_Price', RTRIM(USER_4) as 'Orig_Extension', RTRIM(USER_5) as 'Site_Instructions' FROM V_ORDER_HIST_LINE WHERE ORDER_NO='{0}' AND PART<>'RETENTION'")
+F.Intrinsic.String.Build(v.Local.ssql,v.Screen.frmContractOV!txtProject.text,v.Local.ssql)
+f.Data.DataTable.CreateFromSQL("dtH","conx",v.Local.ssql,true)
+
+f.Data.DataTable.Merge("dtO","dtH",true,1)
+f.Data.DataView.Create("dtH","dv")
+'F.Data.DataTable.Create("dtFinal",true)
+f.Data.DataView.ToDataTableDistinct("dtH","dv","dtFinal","ORDER_NO*!*RECORD_NO*!*PART*!*DESCRIPTION*!*Type*!*Orig_Qty*!*Orig_Price*!*Orig_Extension*!*Site_Instructions",TRUE)
+f.Data.DataTable.AddColumn("dtFinal","MainTotal",Float)
+f.Data.DataTable.AddColumn("dtFinal","AddtTotal",Float)
+f.Data.DataTable.AddColumn("dtFinal","DedtTotal",Float)
+	
+f.Intrinsic.Control.CallSub(calcContract)
+
+gui.frmContractOV.gsgcContract.DataSource("dtFinal")
+gui.frmContractOV.gsgcContract.AddGridviewFromDatatable("gv","dtFinal")
+gui.frmContractOV.gsgcContract.SetGridviewProperty("gv","Editable","True")
+gui.frmContractOV.gsgcContract.SetGridviewProperty("gv","ReadOnly","False")
+GUI.frmContractOV.gsgcContract.SetColumnProperty("gv","MainTotal","Visible","False")
+GUI.frmContractOV.gsgcContract.SetColumnProperty("gv","AddtTotal","Visible","False")
+GUI.frmContractOV.gsgcContract.SetColumnProperty("gv","DedtTotal","Visible","False")
+
+GUI.frmContractOV.gsgcContract.SetColumnProperty("gv","ORDER_NO","ReadOnly","True")
+GUI.frmContractOV.gsgcContract.SetColumnProperty("gv","RECORD_NO","ReadOnly","True")
+GUI.frmContractOV.gsgcContract.SetColumnProperty("gv","PART","ReadOnly","True")
+GUI.frmContractOV.gsgcContract.SetColumnProperty("gv","ORDER_NO","AllowEdit","False")
+GUI.frmContractOV.gsgcContract.SetColumnProperty("gv","RECORD_NO","AllowEdit","False")
+GUI.frmContractOV.gsgcContract.SetColumnProperty("gv","PART","AllowEdit","False")
+
+Program.Sub.buildTable.End
+
+Program.Sub.gsgcContract_CellValueChanged.Start
+v.Local.ssql.Declare(STRING)
+v.Local.fret1.Declare(float)
+v.Local.fret2.Declare(float)
+
+f.Intrinsic.Control.If(v.Args.Column,=,"Orig_Qty")
+	v.Local.ssql.Set("UPDATE ORDER_LINES SET USER_2='{0}' WHERE RECORD_NO='{1}' AND ORDER_NO='{2}'")
+	f.Intrinsic.String.Build(v.Local.ssql,v.Args.value,v.DataTable.dtFinal(V.Args.ROWINDEX).RECORD_NO!FieldvalTrim,v.DataTable.dtFinal(V.Args.rowindex).ORDER_NO!FieldvalTrim,v.Local.ssql)
+	f.ODBC.Connection!conx.EXECUTE(v.Local.ssql)
+	
+	v.Local.ssql.Set("UPDATE ORDER_HIST_LINE SET USER_2='{0}' WHERE ORDER_LINE='{1}' AND ORDER_NO='{2}'")
+	f.Intrinsic.String.Build(v.Local.ssql,v.Args.value,v.DataTable.dtFinal(V.Args.ROWINDEX).RECORD_NO!FieldvalTrim,v.DataTable.dtFinal(V.Args.rowindex).ORDER_NO!FieldvalTrim,v.Local.ssql)
+	f.ODBC.Connection!conx.EXECUTE(v.Local.ssql)
+f.Intrinsic.Control.EndIf
+
+f.Intrinsic.Control.If(v.Args.Column,=,"Orig_Price")
+	v.Local.ssql.Set("UPDATE ORDER_LINES SET USER_3='{0}' WHERE RECORD_NO='{1}' AND ORDER_NO='{2}'")
+	f.Intrinsic.String.Build(v.Local.ssql,v.Args.value,v.DataTable.dtFinal(V.Args.ROWINDEX).RECORD_NO!FieldvalTrim,v.DataTable.dtFinal(V.Args.rowindex).ORDER_NO!FieldvalTrim,v.Local.ssql)
+	f.ODBC.Connection!conx.EXECUTE(v.Local.ssql)
+	
+	v.Local.ssql.Set("UPDATE ORDER_HIST_LINE SET USER_3='{0}' WHERE ORDER_LINE='{1}' AND ORDER_NO='{2}'")
+	f.Intrinsic.String.Build(v.Local.ssql,v.Args.value,v.DataTable.dtFinal(V.Args.ROWINDEX).RECORD_NO!FieldvalTrim,v.DataTable.dtFinal(V.Args.rowindex).ORDER_NO!FieldvalTrim,v.Local.ssql)
+	f.ODBC.Connection!conx.EXECUTE(v.Local.ssql)
+f.Intrinsic.Control.EndIf
+
+f.Intrinsic.Control.If(v.Args.Column,=,"Orig_Extension")
+	v.Local.ssql.Set("UPDATE ORDER_LINES SET USER_4='{0}' WHERE RECORD_NO='{1}' AND ORDER_NO='{2}'")
+	f.Intrinsic.String.Build(v.Local.ssql,v.Args.value,v.DataTable.dtFinal(V.Args.ROWINDEX).RECORD_NO!FieldvalTrim,v.DataTable.dtFinal(V.Args.rowindex).ORDER_NO!FieldvalTrim,v.Local.ssql)
+	f.ODBC.Connection!conx.EXECUTE(v.Local.ssql)
+	
+	v.Local.ssql.Set("UPDATE ORDER_HIST_LINE SET USER_4='{0}' WHERE ORDER_LINE='{1}' AND ORDER_NO='{2}'")
+	f.Intrinsic.String.Build(v.Local.ssql,v.Args.value,v.DataTable.dtFinal(V.Args.ROWINDEX).RECORD_NO!FieldvalTrim,v.DataTable.dtFinal(V.Args.rowindex).ORDER_NO!FieldvalTrim,v.Local.ssql)
+	f.ODBC.Connection!conx.EXECUTE(v.Local.ssql)
+f.Intrinsic.Control.EndIf
+
+f.Intrinsic.Control.If(v.Args.Column,=,"Site_Instructions")
+	v.Local.ssql.Set("UPDATE ORDER_LINES SET USER_5='{0}' WHERE RECORD_NO='{1}' AND ORDER_NO='{2}'")
+	f.Intrinsic.String.Build(v.Local.ssql,v.Args.value,v.DataTable.dtFinal(V.Args.ROWINDEX).RECORD_NO!FieldvalTrim,v.DataTable.dtFinal(V.Args.rowindex).ORDER_NO!FieldvalTrim,v.Local.ssql)
+	f.ODBC.Connection!conx.EXECUTE(v.Local.ssql)
+	
+	v.Local.ssql.Set("UPDATE ORDER_HIST_LINE SET USER_5='{0}' WHERE ORDER_LINE='{1}' AND ORDER_NO='{2}'")
+	f.Intrinsic.String.Build(v.Local.ssql,v.Args.value,v.DataTable.dtFinal(V.Args.ROWINDEX).RECORD_NO!FieldvalTrim,v.DataTable.dtFinal(V.Args.rowindex).ORDER_NO!FieldvalTrim,v.Local.ssql)
+	f.ODBC.Connection!conx.EXECUTE(v.Local.ssql)
+f.Intrinsic.Control.EndIf
+
+f.Intrinsic.Control.If(v.Args.Column,=,"Description")
+	v.Local.ssql.Set("UPDATE ORDER_LINES SET Description='{0}' WHERE RECORD_NO='{1}' AND ORDER_NO='{2}'")
+	f.Intrinsic.String.Build(v.Local.ssql,v.Args.value,v.DataTable.dtFinal(V.Args.ROWINDEX).RECORD_NO!FieldvalTrim,v.DataTable.dtFinal(V.Args.rowindex).ORDER_NO!FieldvalTrim,v.Local.ssql)
+	f.ODBC.Connection!conx.EXECUTE(v.Local.ssql)
+	
+	v.Local.ssql.Set("UPDATE ORDER_HIST_LINE SET Description='{0}' WHERE ORDER_LINE='{1}' AND ORDER_NO='{2}'")
+	f.Intrinsic.String.Build(v.Local.ssql,v.Args.value,v.DataTable.dtFinal(V.Args.ROWINDEX).RECORD_NO!FieldvalTrim,v.DataTable.dtFinal(V.Args.rowindex).ORDER_NO!FieldvalTrim,v.Local.ssql)
+	f.ODBC.Connection!conx.EXECUTE(v.Local.ssql)
+f.Intrinsic.Control.EndIf
+
+f.Intrinsic.Control.If(v.Args.Column,=,"Type")
+	v.Local.ssql.Set("UPDATE ORDER_LINES SET USER_1='{0}' WHERE RECORD_NO='{1}' AND ORDER_NO='{2}'")
+	f.Intrinsic.String.Build(v.Local.ssql,v.Args.value,v.DataTable.dtFinal(V.Args.ROWINDEX).RECORD_NO!FieldvalTrim,v.DataTable.dtFinal(V.Args.rowindex).ORDER_NO!FieldvalTrim,v.Local.ssql)
+	f.ODBC.Connection!conx.EXECUTE(v.Local.ssql)
+	
+	v.Local.ssql.Set("UPDATE ORDER_HIST_LINE SET USER_1='{0}' WHERE ORDER_LINE='{1}' AND ORDER_NO='{2}'")
+	f.Intrinsic.String.Build(v.Local.ssql,v.Args.value,v.DataTable.dtFinal(V.Args.ROWINDEX).RECORD_NO!FieldvalTrim,v.DataTable.dtFinal(V.Args.rowindex).ORDER_NO!FieldvalTrim,v.Local.ssql)
+	f.ODBC.Connection!conx.EXECUTE(v.Local.ssql)
+f.Intrinsic.Control.EndIf
+
+f.Intrinsic.Control.CallSub(calcContract)
+
+Program.Sub.gsgcContract_CellValueChanged.End
+
+Program.Sub.calcContract.Start
+v.Local.ssql.Declare(string)
+v.Local.fret1.Declare(float)
+v.Local.fret2.Declare(float)
+v.Local.fMain.Declare(Float)
+v.Local.sMain.Declare(string)
+v.Local.fAdd.Declare(float)
+v.Local.fDed.Declare(Float)
+v.Local.fGTotal.Declare(Float)
+v.Local.sGTotal.Declare(string)
+v.Local.sAdd.Declare(string)
+v.Local.sDed.Declare(string)
+v.Local.i.Declare(long)
+
+F.Intrinsic.Control.For(v.Local.i,0,v.DataTable.dtFinal.RowCount--,1)
+	f.Intrinsic.Control.If(v.DataTable.dtfinal(v.Local.i).Type!FIELDVAL,=,"MAIN CONTRACT")
+		f.Intrinsic.Math.Add(v.Local.fMain,v.DataTable.dtfinal(v.Local.i).ORIG_EXTENSION!FIELDVALFLOAT,v.Local.fMain)
+	f.Intrinsic.Control.ElseIf(v.DataTable.dtfinal(v.Local.i).Type!FIELDVAL,=,"ADDITIONS")
+		f.Intrinsic.Math.Add(v.Local.fAdd,v.DataTable.dtfinal(v.Local.i).ORIG_EXTENSION!FIELDVALFLOAT,v.Local.fAdd)
+	f.Intrinsic.Control.Elseif(v.DataTable.dtfinal(v.Local.i).Type!FIELDVAL,=,"DEDUCTIONS")
+		f.Intrinsic.Math.Add(v.Local.fDed,v.DataTable.dtfinal(v.Local.i).ORIG_EXTENSION!FIELDVALFLOAT,v.Local.fDed)
+	f.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Math.Add(V.Local.fGTotal,v.DataTable.dtfinal(v.Local.i).ORIG_EXTENSION!FIELDVALFLOAT,V.Local.fGTotal)
+	
+f.Intrinsic.Control.Next(v.local.i)
+
+'Format Captions
+F.Intrinsic.String.Format(V.Local.fGTotal,"###,###,###,###.00",V.Local.SGTotal)
+gui.frmContractOV.txtTotal.text(v.Local.sGTotal)
+F.Intrinsic.String.Format(V.Local.fAdd,"###,###,###,###.00",V.Local.sAdd)
+gui.frmContractOV.txtAdditions.Text(v.Local.sAdd)
+F.Intrinsic.String.Format(V.Local.fDed,"###,###,###,###.00",V.Local.sDed)
+gui.frmContractOV.txtDeductions.Text(v.Local.sDed)
+F.Intrinsic.String.Format(V.Local.fMain,"###,###,###,###.00",V.Local.sMain)
+gui.frmContractOV.txtMainContract.Text(v.Local.sMain)
+
+Program.Sub.calcContract.End
+
+Program.Sub.cmdPreviewer_Click.Start
+f.Intrinsic.Control.Try
+	v.Local.i.Declare(Long)
+	v.Local.ssql.Declare(string)
+	
+	'DELETE OUT
+	V.Local.SDEL.Declare(String,"DELETE FROM GAB_4490_CLAIM WHERE TERMINAL_NO='{0}' AND INVOICE_NO='{1}' AND RPTID='000055'")
+	F.Intrinsic.String.Build(v.Local.SDEL,v.Caller.Terminal,"000000",v.Local.SDEL)
+	f.ODBC.Connection!CONX.Execute(v.Local.SDEL)
+	
+	F.Intrinsic.Control.For(V.Local.i,0,v.DataTable.dtFinal.RowCount--,1)
+		v.Local.SSQL.Set("INSERT INTO GAB_4490_CLAIM (RPTID,TERMINAL_NO, INVOICE_NO, LINE_TYPE, LN_USR_FLD_1, PART, DESCRIPTION, PRICE_4, FILLER4, QTY_SHIPPED, QTY_SHIPPED_2, QTY_SHIPPED_4, NET_AMT, FILLER29, SO_NUM, SO_LINE,LN_USR_FLD_2,LN_USR_FLD_3,LN_USR_FLD_4) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{9}','{9}','{10}','{11}','{12}','{13}','{14}','{15}','{16}')")
+		f.Intrinsic.String.Build(v.Local.SSQL,"000055",v.Caller.Terminal,"000000","L",v.DataTable.dtfinal(v.Local.i).TYPE!FIELDVAL,v.DataTable.dtfinal(v.Local.i).PART!FIELDVAL,v.DataTable.dtfinal(v.Local.i).DESCRIPTION!FIELDVAL,v.DataTable.dtfinal(v.Local.i).ORIG_EXTENSION!FIELDVAL,"0","0","0","0",v.DataTable.dtfinal(v.Local.i).order_no!FIELDVAL,v.DataTable.dtfinal(v.Local.i).RECORD_NO!FIELDVAL,v.DataTable.dtfinal(v.Local.i).ORIG_QTY!FIELDVAL,v.DataTable.dtfinal(v.Local.i).ORIG_PRICE!FIELDVAL,v.DataTable.dtfinal(v.Local.i).ORIG_EXTENSION!FIELDVAL,v.Local.SSQL)
+		F.ODBC.Connection!CONX.Execute(v.Local.SSQL)																								
+	f.Intrinsic.Control.Next(v.Local.i)
+	
+	v.Local.lRPTID.Declare(long)
+	V.Local.sParam.Declare(string,"Terminal*!*REPORTID*!*PRTORD*!*Invoice")
+	v.Local.sValue.Declare(string)
+	f.Intrinsic.String.Concat(v.Caller.Terminal,"*!*000055*!*BLANK*!*000000",v.Local.sValue)
+	f.Intrinsic.String.Split(v.Local.sParam,"*!*",v.Local.sParam)
+	f.Intrinsic.String.Split(v.Local.sValue,"*!*",v.Local.sValue)
+	
+	F.Global.BI.GetIDFromName("GAB_4490_OE_INVOICE_CLAIM_A4_NEW.rpt",V.Local.lRptID)
+	f.Global.BI.PrintReport(v.Local.lRPTID,0,v.Local.sParam,v.Local.sValue,"",false)
+	
+f.Intrinsic.Control.Catch
+	f.Intrinsic.UI.Msgbox(v.Ambient.ErrorDescription)
+f.Intrinsic.Control.EndTry
+Program.Sub.cmdPreviewer_Click.End
+
+Program.Sub.cmdInvBrowse_Click.Start
+v.Local.sProjCheck.Declare(string)
+v.Local.sProjCheck.Set(v.Screen.frmContractOV!txtProject.text)
+f.Intrinsic.Control.If(v.Local.sProjCheck.Trim,=,"")
+	f.Intrinsic.UI.Msgbox("No Project Selected")
+	f.Intrinsic.Control.ExitSub
+f.Intrinsic.Control.Else
+	V.Local.sRet.Declare(String)
+	V.Local.sTitles.Declare(String)
+	V.Local.iWidths.Declare(String)
+	V.Local.stemp.Declare(String)
+	
+	F.intrinsic.string.split("Invoice*!*Order No*!*Claim","*!*",v.local.sTitles)
+	F.intrinsic.string.split("2000*!*2000*!*3000","*!*",v.local.iWidths)
+	
+	V.Local.ssql.Declare(String,"SELECT DISTINCT INVOICE, ORDER_NO, LTRIM(USER_1) AS 'CLAIM NO' FROM V_ORDER_HIST_HEAD WHERE ORDER_NO='{0}'")
+	f.Intrinsic.String.Build(v.Local.ssql,v.Screen.frmContractOV!txtProject.text,v.Local.ssql)
+	
+	F.intrinsic.ui.browser("Select a Invoice",conx,v.Local.ssql,v.local.sTitles,v.local.iWidths,v.local.sRet)
+	
+	F.intrinsic.control.if(v.local.sRet,"=","***CANCEL***")
+	F.intrinsic.control.else
+		f.Intrinsic.String.Split(v.Local.sRet,"*!*",v.Local.sRet)
+		gui.frmContractOV.txtInvNumber.Text(v.Local.sRet(0))
+	f.Intrinsic.Control.EndIf
+f.Intrinsic.Control.EndIf
+Program.Sub.cmdInvBrowse_Click.End
+
+Program.Sub.Main.Start
+f.ODBC.Connection!conx.openconnection(v.Ambient.PDSN,v.Ambient.PUser,v.Ambient.PPass)
+
+f.Intrinsic.Control.If(v.Passed.000003.Trim,<>,"")
+	v.local.sPad.Declare(string)
+	f.Intrinsic.String.lpad(v.Passed.000003,"0",7,v.Local.sPad)
+	gui.frmContractOV.txtProject.Text(v.Local.sPad)
+	f.Intrinsic.Control.CallSub(buildTable)
+f.Intrinsic.Control.EndIf
+
+gui.frmContractOV..Show
+gui.frmContractOV.gsgcContract.anchor(15)
+f.Intrinsic.UI.SetBrowserHotTypeAhead(true)
+Program.Sub.Main.End
